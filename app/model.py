@@ -120,7 +120,7 @@ class Inference(Resource):
 
             try:
                 model_path = hf_hub_download(repo_id=repo_id, filename=filename, token=token)
-                model = load_model(model_path)  
+                model = joblib.load(model_path)
             except Exception as e:
                 return {"message": f"Failed to load model: {str(e)}"}, 500
 
