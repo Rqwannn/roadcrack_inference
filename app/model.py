@@ -2,6 +2,7 @@ from flask import request, abort, jsonify
 from flask_restful import Resource, reqparse
 from werkzeug.datastructures import FileStorage
 
+from tensorflow.keras.preprocessing import image
 from tensorflow.keras.models import load_model
 from huggingface_hub import HfApi, hf_hub_download
 
@@ -11,7 +12,6 @@ import numpy as np
 from utils.function import *
 from dotenv import load_dotenv
 import joblib
-import io
 import os
 
 class Inference(Resource):
@@ -22,7 +22,8 @@ class Inference(Resource):
 
         self.MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
         self.ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg'}
-        
+        self.labels = ["AlligatorCrack", "LongCrack", "OtherCrack", "Patching", "Potholes"]
+
     def get(self):
         try:
             load_dotenv()
@@ -108,6 +109,7 @@ class Inference(Resource):
                 return {"message": "File size too large. Maximum size is 5MB"}, 400
 
             file_ext = os.path.splitext(image_file.filename.lower())[1]
+
             if file_ext not in self.ALLOWED_EXTENSIONS:
                 return {"message": "Only PNG and JPG files are allowed"}, 400
 
@@ -125,22 +127,22 @@ class Inference(Resource):
                 return {"message": f"Failed to load model: {str(e)}"}, 500
 
             # Preprocessing image
-            image = Image.open(image_file).convert("RGB")
-            image = image.resize((224, 224))
-            
-            # Tambahkan preprocessing LBP
-            # image_lbp = apply_lbp(image)  # Implementasi fungsi LBP
-            
-            image_array = (np.array(image) / 255.0).reshape(1, 224, 224, 3)
+
+            image = process_image(image_file)
 
             # Prediksi
-            prediction = model.predict(image_array)
+            prediction = model.predict(image.reshape(1, -1))
+            
+            # Get the label with the highest probability
             prediction_list = prediction.tolist() if hasattr(prediction, 'tolist') else prediction
+            predicted_index = np.argmax(prediction, axis=1)[0]
+            predicted_label = self.labels[predicted_index]
 
             return {
                 "message": "Prediction successful",
                 "description": description,
-                "prediction": prediction_list
+                "prediction": predicted_label,
+                "prediction_confidance": prediction_list,
             }, 200
 
         except Exception as e:
