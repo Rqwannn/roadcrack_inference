@@ -9,16 +9,20 @@ from huggingface_hub import HfApi, hf_hub_download
 from PIL import Image
 import numpy as np
 
+from utils.bounding_box import *
+from utils.calculate_damage import *
 from utils.function import *
 from dotenv import load_dotenv
 import joblib
 import os
 
+
 class Inference(Resource):
     def __init__(self):
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('image', type=FileStorage, location='files', required=True)
-        self.parser.add_argument('description', type=str, location='form', required=True)
+        self.parser.add_argument('lat', type=str, location='form', required=True)
+        self.parser.add_argument('long', type=str, location='form', required=True)
 
         self.MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
         self.ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg'}
@@ -100,7 +104,10 @@ class Inference(Resource):
         try:
             args = self.parser.parse_args()
             image_file = args['image']
-            description = args['description']
+            lat = args['lat']
+            long = args['long']
+
+            proccess_bounding_box, real_image = call_model(image_file)
 
             if not image_file:
                 return {"message": "No image file provided"}, 400
@@ -126,23 +133,55 @@ class Inference(Resource):
             except Exception as e:
                 return {"message": f"Failed to load model: {str(e)}"}, 500
 
-            # Preprocessing image
+            # image = process_image(image_file)
 
-            image = process_image(image_file)
-
-            # Prediksi
-            prediction = model.predict(image.reshape(1, -1))
+            # # Prediksi
+            # prediction = model.predict(image.reshape(1, -1))
             
-            # Get the label with the highest probability
-            prediction_list = prediction.tolist() if hasattr(prediction, 'tolist') else prediction
-            predicted_index = np.argmax(prediction, axis=1)[0]
-            predicted_label = self.labels[predicted_index]
+            # prediction_list = prediction.tolist() if hasattr(prediction, 'tolist') else prediction
+            # predicted_index = np.argmax(prediction, axis=1)[0]
+            # predicted_label = self.labels[predicted_index]
+
+            prediction_labeling = []
+            prediction_confidance = []
+            similarity = []
+            bounding_boxes = []
+
+            for index, image_box in enumerate(proccess_bounding_box):
+
+                image = process_image(image_box)
+
+                # Prediksi
+                prediction = model.predict(image.reshape(1, -1))
+                
+                prediction_list = prediction.tolist() if hasattr(prediction, 'tolist') else prediction
+                predicted_index = np.argmax(prediction, axis=1)[0]
+                predicted_label = self.labels[predicted_index]
+
+                similarity_score = similarity_to_alligator(image_box, predicted_label)
+
+                similarity.append({
+                     f"Result-{index}" : similarity_score
+                })
+                prediction_labeling.append(predicted_label)
+                prediction_confidance.append({
+                    f"Result-{index}" : prediction_list
+                })
+
+                bounding_boxes.append(image_to_base64(image_box))
+
+            original_image = image_to_base64(real_image)
 
             return {
                 "message": "Prediction successful",
-                "description": description,
-                "prediction": predicted_label,
-                "prediction_confidance": prediction_list,
+                "lat": lat,
+                "long": long,
+                "prediction_labeling": prediction_labeling,
+                "prediction_confidance": prediction_confidance,
+                "similarity_score": similarity,
+
+                "bounding_boxes": bounding_boxes,
+                "original_image" : original_image
             }, 200
 
         except Exception as e:

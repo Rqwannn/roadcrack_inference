@@ -4,6 +4,9 @@ import numpy as np
 import cv2
 from PIL import Image
 
+import base64
+from io import BytesIO
+
 from tensorflow.keras.models import load_model
 import tensorflow as tf
 from tensorflow.keras.applications import InceptionV3
@@ -50,24 +53,34 @@ def load_pretrained_model():
 
     return feature_extractor
 
-def extract_inception_features(img_path):
-    # img = image.load_img(img_path, target_size=(224, 224))
-    images = Image.open(img_path).convert("RGB")
-    img = images.resize((224, 224)) 
+def extract_inception_features(pil_image):
+    """
+    Extract features from an image using InceptionV3, starting from a PIL.Image.Image.
+    """
+
+    img_array = np.array(pil_image, copy=True)
+
+    img = Image.fromarray(img_array).resize((224, 224))
+
     img_array = image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
     img_array = preprocess_input(img_array)
+
     features = load_pretrained_model().predict(img_array)
+
     return features.flatten()
 
-def process_image(img_path):
-    # img_original = cv2.imread(img_path)
-    file_stream = img_path.stream
-    file_stream.seek(0) 
-    
-    # Konversi ke numpy array
-    file_bytes = np.asarray(bytearray(file_stream.read()), dtype=np.uint8)
-    img_original = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+def pil_to_cv2(pil_image):
+    """
+    Convert a PIL.Image.Image to OpenCV format.
+    """
+    return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+
+def process_image(pil_image):
+    """
+    Process an image starting from a PIL.Image.Image input.
+    """
+    img_original = pil_to_cv2(pil_image)
     
     if img_original is None:
         raise ValueError("Failed to decode image")
@@ -75,10 +88,17 @@ def process_image(img_path):
     lbp_image = compute_lbp(img_original)
     hist_lbp, _ = np.histogram(lbp_image.ravel(), bins=np.arange(0, 256))
     hist_lbp = hist_lbp.astype('float32')
-    hist_lbp /= hist_lbp.sum()  # Normalisasi histogram
+    hist_lbp /= hist_lbp.sum()
     
-    features_inception = extract_inception_features(img_path)
+    features_inception = extract_inception_features(img_original)
 
     combined_features = np.hstack([features_inception, hist_lbp])
     
     return combined_features
+
+def image_to_base64(image):
+    """Mengonversi gambar PIL ke base64 string dengan prefix data URL."""
+    buffered = BytesIO()
+    image.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    return f"data:image/jpeg;base64,{img_str}"
