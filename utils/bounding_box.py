@@ -16,8 +16,8 @@ def call_model(images):
 
     cropped_images = []
 
-    for item in predictions:
-        if item.confidence > 0.8:
+    for index, item in enumerate(predictions):
+        if item.confidence > 0.5:
             x1 = int(item.x - item.width / 2)
             y1 = int(item.y - item.height / 2)
             x2 = int(item.x + item.width / 2)
@@ -27,7 +27,7 @@ def call_model(images):
             cropped_images.append(cropped_image)
 
             draw.rectangle([x1, y1, x2, y2], outline="red", width=3)
-            text = f"{item.class_name} - {item.confidence:.2f}"
+            text = f"No {index} - {item.class_name} - {item.confidence:.2f}"
             draw.text((x1, y1), text, fill="red")
 
     image.show()
