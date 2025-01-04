@@ -16,7 +16,6 @@ from dotenv import load_dotenv
 import joblib
 import os
 
-
 class Inference(Resource):
     def __init__(self):
         self.parser = reqparse.RequestParser()
@@ -133,15 +132,6 @@ class Inference(Resource):
             except Exception as e:
                 return {"message": f"Failed to load model: {str(e)}"}, 500
 
-            # image = process_image(image_file)
-
-            # # Prediksi
-            # prediction = model.predict(image.reshape(1, -1))
-            
-            # prediction_list = prediction.tolist() if hasattr(prediction, 'tolist') else prediction
-            # predicted_index = np.argmax(prediction, axis=1)[0]
-            # predicted_label = self.labels[predicted_index]
-
             prediction_labeling = []
             prediction_confidance = []
             similarity = []
@@ -151,14 +141,13 @@ class Inference(Resource):
 
                 image = process_image(image_box)
 
-                # Prediksi
                 prediction = model.predict(image.reshape(1, -1))
                 
                 prediction_list = prediction.tolist() if hasattr(prediction, 'tolist') else prediction
                 predicted_index = np.argmax(prediction, axis=1)[0]
                 predicted_label = self.labels[predicted_index]
 
-                similarity_score = similarity_to_alligator(image_box, predicted_label)
+                similarity_score = similarity_algoritm(image_box, predicted_label)
 
                 similarity.append({
                      f"Result-{index}" : similarity_score
