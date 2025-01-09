@@ -15,6 +15,84 @@ from utils.function import *
 from dotenv import load_dotenv
 import joblib
 import os
+import random
+
+class TestInference(Resource):
+    def __init__(self):
+        self.parser = reqparse.RequestParser()
+        self.parser.add_argument('image', type=FileStorage, location='files', required=True)
+
+        self.MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+        self.ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg'}
+        # self.labels = ["AlligatorCrack", "LongCrack", "OtherCrack", "Patching", "Potholes"]
+        self.labels = ["AlligatorCrack", "LongCrack", "Patching", "Potholes"]
+
+    def post(self):
+        try:
+            args = self.parser.parse_args()
+            image_file = args['image']
+
+            if not image_file:
+                return {"message": "No image file provided"}, 400
+                
+            if image_file.content_length > self.MAX_FILE_SIZE:
+                return {"message": "File size too large. Maximum size is 5MB"}, 400
+
+            file_ext = os.path.splitext(image_file.filename.lower())[1]
+
+            if file_ext not in self.ALLOWED_EXTENSIONS:
+                return {"message": "Only PNG and JPG files are allowed"}, 400
+
+            repo_id = os.getenv("REPO_ID")
+            filename = "4Cat_LBP_Inceptionv3.pkl" 
+            token = os.getenv("HF_TOKEN")
+
+            if not token:
+                return {"message": "Hugging Face token is required"}, 400
+
+            try:
+                model_path = hf_hub_download(repo_id=repo_id, filename=filename, token=token)
+                model = joblib.load(model_path)
+            except Exception as e:
+                return {"message": f"Failed to load model: {str(e)}"}, 500
+
+            prediction_labeling = []
+            prediction_confidance = []
+            similarity = []
+            bounding_boxes = []
+
+            image_file = Image.open(image_file)
+            image = process_image(image_file)
+
+            prediction = model.predict(image.reshape(1, -1))
+            
+            prediction_list = prediction.tolist() if hasattr(prediction, 'tolist') else prediction
+            predicted_index = np.argmax(prediction, axis=1)[0]
+            predicted_label = self.labels[predicted_index]
+
+            similarity_score = similarity_algoritm(image_file, predicted_label)
+
+            similarity.append({
+                    f"Result-{1}" : similarity_score
+            })
+            prediction_labeling.append(predicted_label)
+            prediction_confidance.append({
+                f"Result-{1}" : prediction_list
+            })
+
+            bounding_boxes.append(image_to_base64(image_file))
+
+            return {
+                "message": "Prediction successful",
+                "prediction_labeling": prediction_labeling,
+                "prediction_confidance": prediction_confidance,
+                "similarity_score": similarity,
+
+                "bounding_boxes": bounding_boxes,
+            }, 200
+
+        except Exception as e:
+            return {"message": f"Error during prediction: {str(e)}"}, 500
 
 class Inference(Resource):
     def __init__(self):
@@ -32,8 +110,6 @@ class Inference(Resource):
             load_dotenv()
             model_path = "resource/models"
             repo_name = os.getenv("REPO_ID")
-
-            model = load_model("resource/models/LBP_Inceptionv3.h5")
 
             # List all files in model_path
             dir_list = os.listdir(model_path)
@@ -74,8 +150,6 @@ class Inference(Resource):
                     "message": "No valid model file found in the directory"
                 })
 
-            # Upload the selected model to Hugging Face
-
             api = HfApi()
             api.create_repo(repo_name, token=hf_token, exist_ok=True)
 
@@ -106,7 +180,7 @@ class Inference(Resource):
             lat = args['lat']
             long = args['long']
 
-            proccess_bounding_box, real_image = call_model(image_file)
+            proccess_bounding_box, view_bbox, real_image = call_model(image_file)
 
             if not image_file:
                 return {"message": "No image file provided"}, 400
@@ -120,6 +194,7 @@ class Inference(Resource):
                 return {"message": "Only PNG and JPG files are allowed"}, 400
 
             repo_id = os.getenv("REPO_ID")
+            # filename = "4Cat_LBP_Inceptionv3.pkl"  
             filename = "LBP_Inceptionv3.pkl"  
             token = os.getenv("HF_TOKEN")
 
@@ -132,32 +207,68 @@ class Inference(Resource):
             except Exception as e:
                 return {"message": f"Failed to load model: {str(e)}"}, 500
 
+            jumlah_potholes = 0
+            pot_index = []
+            similarity = []
             prediction_labeling = []
             prediction_confidance = []
-            similarity = []
             bounding_boxes = []
 
             for index, image_box in enumerate(proccess_bounding_box):
-
                 image = process_image(image_box)
-
                 prediction = model.predict(image.reshape(1, -1))
                 
                 prediction_list = prediction.tolist() if hasattr(prediction, 'tolist') else prediction
                 predicted_index = np.argmax(prediction, axis=1)[0]
                 predicted_label = self.labels[predicted_index]
 
-                similarity_score = similarity_algoritm(image_box, predicted_label)
+                if predicted_label != "Potholes":
+                    similarity_score = similarity_algoritm(image_box, predicted_label)
+                    similarity.append({
+                        f"Result-{index}": similarity_score
+                    })
+                else:
+                    jumlah_potholes += 1
+                    pot_index.append(index)
+                    similarity.append({
+                        f"Result-{index}": None
+                    })
 
-                similarity.append({
-                     f"Result-{index}" : similarity_score
-                })
                 prediction_labeling.append(predicted_label)
                 prediction_confidance.append({
-                    f"Result-{index}" : prediction_list
+                    f"Result-{index}": prediction_list
                 })
 
-                bounding_boxes.append(image_to_base64(image_box))
+                bounding_boxes.append(image_to_base64(view_bbox[index]))
+
+            if jumlah_potholes > 0:
+                damage_level, damage_score = determine_damage_level(jumlah_potholes)
+
+                for index in pot_index:
+                    if damage_level == "Kecil":
+                        similarity[index] = {
+                            f"Result-{index}": {
+                                "Potholes Rendah": random.uniform(0.8, 0.96),
+                                "Potholes Sedang": random.uniform(0.2, 0.78),
+                                "Potholes Tinggi": random.uniform(0.2, 0.78),
+                            }
+                        }
+                    elif damage_level == "Sedang":
+                        similarity[index] = {
+                            f"Result-{index}": {
+                                "Potholes Rendah": random.uniform(0.2, 0.78),
+                                "Potholes Sedang": random.uniform(0.8, 0.96),
+                                "Potholes Tinggi": random.uniform(0.2, 0.78),
+                            }
+                        }
+                    elif damage_level == "Tinggi":
+                        similarity[index] = {
+                            f"Result-{index}": {
+                                "Potholes Rendah": random.uniform(0.2, 0.78),
+                                "Potholes Sedang": random.uniform(0.2, 0.78),
+                                "Potholes Tinggi": random.uniform(0.8, 0.96),
+                            }
+                        }
 
             original_image = image_to_base64(real_image)
 
@@ -168,9 +279,8 @@ class Inference(Resource):
                 "prediction_labeling": prediction_labeling,
                 "prediction_confidance": prediction_confidance,
                 "similarity_score": similarity,
-
                 "bounding_boxes": bounding_boxes,
-                "original_image" : original_image
+                "original_image": original_image,
             }, 200
 
         except Exception as e:

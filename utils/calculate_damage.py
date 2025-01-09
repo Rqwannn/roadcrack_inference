@@ -52,8 +52,22 @@ def centroid_similarity_LongCrack(query_centroids):
 
     return similarities
 
-def centroid_similarity_OtherCrack():
-    pass
+def centroid_similarity_OtherCrack(query_centroids):
+    category1_centroids = np.array([[60.822815, 223.83606], [33.158257, 45.139465], [46.817276, 421.22812]])
+    category2_centroids = np.array([[34.394737, 107.26316], [13.724753, 20.106932], [21.202703, 217.33784]])
+    category3_centroids = np.array([[27.515152, 256.27274], [190.48914, 135.61957], [57.820225, 48.7191]])
+
+    similarity_to_category1 = compute_cosine_similarity(query_centroids, category1_centroids)
+    similarity_to_category2 = compute_cosine_similarity(query_centroids, category2_centroids)
+    similarity_to_category3 = compute_cosine_similarity(query_centroids, category3_centroids)
+
+    similarities = {
+        "OtherCrack Rendah": similarity_to_category1,
+        "OtherCrack Sedang": similarity_to_category2,
+        "OtherCrack Tinggi": similarity_to_category3,
+    }
+
+    return similarities
 
 def centroid_similarity_Patching(query_centroids):
     category1_centroids = np.array([[60.822815, 223.83606], [33.158257, 45.139465], [46.817276, 421.22812]])
@@ -72,9 +86,6 @@ def centroid_similarity_Patching(query_centroids):
 
     return similarities
 
-def centroid_similarity_Potholes():
-    pass
-
 def similarity_algoritm(images, category):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
 
@@ -89,7 +100,9 @@ def similarity_algoritm(images, category):
     elif category == "LongCrack":
         similarities = centroid_similarity_LongCrack(query_centroids)
     elif category == "Patching":
-        similarities = centroid_similarity_LongCrack(query_centroids)
+        similarities = centroid_similarity_Patching(query_centroids)
+    elif category == "OtherCrack":
+        similarities = centroid_similarity_OtherCrack(query_centroids)
 
     closest_category = max(similarities, key=similarities.get)  # Karena cosine similarity, semakin besar semakin mirip
 

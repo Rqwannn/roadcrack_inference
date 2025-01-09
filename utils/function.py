@@ -101,3 +101,13 @@ def image_to_base64(image):
     image.save(buffered, format="JPEG")
     img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
     return f"data:image/jpeg;base64,{img_str}"
+
+def determine_damage_level(jumlah_potholes):
+    if 1 <= jumlah_potholes <= 3:
+        return "Kecil", 0.3  
+    elif 4 <= jumlah_potholes <= 6:
+        return "Sedang", 0.6  
+    elif jumlah_potholes >= 7:
+        return "Tinggi", 1.0  
+    else:
+        return "Tidak Ada", 0.0 

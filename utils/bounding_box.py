@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw
 
 def call_model(images):
     model = inference.get_model(
-        "crackdetection-oufte/2",
+        "roadcracknewversion/1",
         api_key=os.getenv("ROBOFLOW_API_KEY")
     )
 
@@ -15,6 +15,7 @@ def call_model(images):
     draw = ImageDraw.Draw(image)
 
     cropped_images = []
+    view_bbox = []
 
     for index, item in enumerate(predictions):
         if item.confidence > 0.5:
@@ -27,9 +28,18 @@ def call_model(images):
             cropped_images.append(cropped_image)
 
             draw.rectangle([x1, y1, x2, y2], outline="red", width=3)
-            text = f"No {index} - {item.class_name} - {item.confidence:.2f}"
-            draw.text((x1, y1), text, fill="red")
+            # text = f"No {index} - {item.class_name} - {item.confidence:.2f}"
+            # draw.text((x1, y1), text, fill="red")
 
-    image.show()
+            padding = 12
+            x1_padded = max(0, x1 - padding)
+            y1_padded = max(0, y1 - padding)
+            x2_padded = min(image.width, x2 + padding)
+            y2_padded = min(image.height, y2 + padding)
 
-    return cropped_images, image
+            padded_cropped_image = image.crop((x1_padded, y1_padded, x2_padded, y2_padded))
+            view_bbox.append(padded_cropped_image)
+
+    # image.show()
+
+    return cropped_images, view_bbox, image
