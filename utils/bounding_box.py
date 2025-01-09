@@ -32,10 +32,17 @@ def call_model(images):
             # draw.text((x1, y1), text, fill="red")
 
             padding = 12
+
+            available_padding_top = y1
+            available_padding_bottom = image.height - y2
+
+            actual_padding_top = min(padding, available_padding_top)
+            actual_padding_bottom = min(padding, available_padding_bottom)
+
             x1_padded = max(0, x1 - padding)
-            y1_padded = max(0, y1 - padding)
+            y1_padded = max(0, y1 - actual_padding_top)
             x2_padded = min(image.width, x2 + padding)
-            y2_padded = min(image.height, y2 + padding)
+            y2_padded = min(image.height, y2 + actual_padding_bottom)
 
             padded_cropped_image = image.crop((x1_padded, y1_padded, x2_padded, y2_padded))
             view_bbox.append(padded_cropped_image)
