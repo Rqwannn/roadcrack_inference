@@ -53,9 +53,9 @@ def centroid_similarity_LongCrack(query_centroids):
     return similarities
 
 def centroid_similarity_OtherCrack(query_centroids):
-    category1_centroids = np.array([[60.822815, 223.83606], [33.158257, 45.139465], [46.817276, 421.22812]])
-    category2_centroids = np.array([[34.394737, 107.26316], [13.724753, 20.106932], [21.202703, 217.33784]])
-    category3_centroids = np.array([[27.515152, 256.27274], [190.48914, 135.61957], [57.820225, 48.7191]])
+    category1_centroids = np.array([[62.7478, 226.57185], [223.532, 60.10055], [50.84793, 60.008514]])
+    category2_centroids = np.array([[102.89232, 74.34069], [47.559975, 201.08815], [45.03844, 49.060814]])
+    category3_centroids = np.array([[136.26967, 419.65634], [374.8555, 111.91356], [115.053345, 180.7517]])
 
     similarity_to_category1 = compute_cosine_similarity(query_centroids, category1_centroids)
     similarity_to_category2 = compute_cosine_similarity(query_centroids, category2_centroids)

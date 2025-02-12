@@ -180,7 +180,7 @@ class Inference(Resource):
             lat = args['lat']
             long = args['long']
 
-            proccess_bounding_box, view_bbox, real_image = call_model(image_file)
+            proccess_bounding_box, view_bbox, real_image = call_model(image_file) # Jika ga ada bbox bisa 500 code
 
             if not image_file:
                 return {"message": "No image file provided"}, 400
