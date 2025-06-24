@@ -121,7 +121,7 @@ class Inference(Resource):
 
             if hf_token is None:
                 return jsonify({
-                    "message": "Tidak ada secret token Hugging Face"
+                    "message": "There is no secret token Hugging Face"
                 })
             else:
                 print(f"Using Hugging Face token from env.")
@@ -165,12 +165,12 @@ class Inference(Resource):
             )
 
             return jsonify({
-                "message": "Model Berhasil Di simpan"
+                "message": "Model Successfully Saved"
             })
 
         except Exception as e:
             return jsonify({
-                "message": f"Error terjadi masalah pada API: {str(e)}"
+                "message": f"Error occurred with the API: {str(e)}"
             })
     
     def post(self):
