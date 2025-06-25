@@ -28,9 +28,9 @@ def centroid_similarity_Alligator(query_centroids):
     similarity_to_category3 = compute_cosine_similarity(query_centroids, category3_centroids)
 
     similarities = {
-        "AlligatorCrack Low": similarity_to_category1,
-        "AlligatorCrack Medium": similarity_to_category2,
-        "AlligatorCrack High": similarity_to_category3,
+        "AlligatorCrack Rendah": similarity_to_category1,
+        "AlligatorCrack Sedang": similarity_to_category2,
+        "AlligatorCrack Tinggi": similarity_to_category3,
     }
 
     return similarities
@@ -45,9 +45,9 @@ def centroid_similarity_LongCrack(query_centroids):
     similarity_to_category3 = compute_cosine_similarity(query_centroids, category3_centroids)
 
     similarities = {
-        "LongitudinalCrack Low": similarity_to_category1,
-        "LongitudinalCrack Medium": similarity_to_category2,
-        "LongitudinalCrack High": similarity_to_category3,
+        "LongitudinalCrack Rendah": similarity_to_category1,
+        "LongitudinalCrack Sedang": similarity_to_category2,
+        "LongitudinalCrack Tinggi": similarity_to_category3,
     }
 
     return similarities
@@ -62,9 +62,9 @@ def centroid_similarity_OtherCrack(query_centroids):
     similarity_to_category3 = compute_cosine_similarity(query_centroids, category3_centroids)
 
     similarities = {
-        "OtherCrack Low": similarity_to_category1,
-        "OtherCrack Medium": similarity_to_category2,
-        "OtherCrack High": similarity_to_category3,
+        "OtherCrack Rendah": similarity_to_category1,
+        "OtherCrack Sedang": similarity_to_category2,
+        "OtherCrack Tinggi": similarity_to_category3,
     }
 
     return similarities
@@ -79,9 +79,9 @@ def centroid_similarity_Patching(query_centroids):
     similarity_to_category3 = compute_cosine_similarity(query_centroids, category3_centroids)
 
     similarities = {
-        "Patching Low": similarity_to_category1,
-        "Patching Medium": similarity_to_category2,
-        "Patching High": similarity_to_category3,
+        "Patching Rendah": similarity_to_category1,
+        "Patching Sedang": similarity_to_category2,
+        "Patching Tinggi": similarity_to_category3,
     }
 
     return similarities
